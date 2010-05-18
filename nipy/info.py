@@ -2,7 +2,8 @@
 
 This script should do no imports.  It only defines variables.
 '''
-
+version = '0.1.2'
+is_release = False
 
 long_description = \
 """

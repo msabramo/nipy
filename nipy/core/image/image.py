@@ -36,7 +36,6 @@ class Image(object):
 
     Examples
     --------
-
     >>> from nipy.core.image import image
     >>> from nipy.testing import anatfile
     >>> from nipy.io.api import load_image
@@ -45,7 +44,6 @@ class Image(object):
     >>> import numpy as np
     >>> img = image.fromarray(np.zeros((21, 64, 64), dtype='int16'),
     ...                       'kji', 'zxy')
-
     """
 
     _doc = {}
@@ -320,13 +318,9 @@ class Image(object):
         >>> im_renamed_reference = im.renamed_reference(x='newx', y='newy')
         >>> print im_renamed_reference.reference
         CoordinateSystem(coord_names=('newx', 'newy', 'z'), name='range', coord_dtype=float64)
-
-
         """
-
         newcmap = self.coordmap.renamed_range(names_dict)
         return self.__class__(self._data, newcmap)
-
 
     def __setitem__(self, index, value):
         """Setting values of an image, set values in the data array."""
@@ -387,27 +381,22 @@ class SliceMaker(object):
 slice_maker = SliceMaker()
 
 def subsample(img, slice_object):
-    """
-    Subsample an image. 
+    """ Subsample an image. 
 
     Parameters
     ----------
-
-    img: Image
-
+    img : Image
     slice_object: int, slice or [slice]
-         An object representing a numpy 'slice'.
+       An object representing a numpy 'slice'.
     
     Returns
     -------
-
     img_subsampled: Image
-         An Image with data img.get_data()[slice_object] and an appropriately
-         corrected CoordinateMap.
+       An Image with data img.get_data()[slice_object] and an
+       appropriately corrected CoordinateMap.
 
     Examples
     --------
-
     >>> from nipy.io.api import load_image
     >>> from nipy.testing import funcfile
     >>> from nipy.core.api import subsample, slice_maker
@@ -415,7 +404,6 @@ def subsample(img, slice_object):
     >>> frame3 = subsample(im, slice_maker[:,:,:,3])
     >>> from nipy.testing import funcfile, assert_almost_equal
     >>> assert_almost_equal(frame3.get_data(), im.get_data()[:,:,:,3])
-
     """
     data = img.get_data()[slice_object]
     g = ArrayCoordMap(img.coordmap, img.shape)[slice_object]
@@ -424,6 +412,7 @@ def subsample(img, slice_object):
         return img.__class__(data, coordmap, metadata=img.metadata)
     else:
         return data
+
 
 def fromarray(data, innames, outnames, coordmap=None):
     """Create an image from a numpy array.
@@ -455,8 +444,8 @@ def fromarray(data, innames, outnames, coordmap=None):
                                                    outnames,
                                                    (0.,)*ndim,
                                                    (1.,)*ndim)
-                                          
     return Image(data, coordmap)
+
 
 def rollaxis(img, axis, inverse=False):
     """
@@ -470,24 +459,22 @@ def rollaxis(img, axis, inverse=False):
 
     Parameters
     ----------
-
     img : Image
         Image whose axes and reference coordinates are to be reordered
         by rolling.
-
     axis : str or int
         Axis to be rolled, can be specified by name or 
         as an integer.
-
     inverse : bool, optional
         If inverse is True, then axis must be an integer and the first axis
         is returned to the position axis.
 
     Returns
     -------
-
     newimg : An Image with reordered axes and reference coordinates.
 
+    Examples
+    --------
     >>> data = np.zeros((30,40,50,5))
     >>> affine_transform = AffineTransform.from_params('ijkl', 'xyzt', np.diag([1,2,3,4,1]))
     >>> im = Image(data, affine_transform)
@@ -496,7 +483,6 @@ def rollaxis(img, axis, inverse=False):
     array([ 4.,  1.,  2.,  3.,  1.])
     >>> im_t_first.shape
     (5, 30, 40, 50)
-
     """
     if axis not in [-1] + range(img.axes.ndim) + list(img.axes.coord_names) + list(img.reference.coord_names):
         raise ValueError('axis must be an axis number, -1, an axis name or a reference name')
@@ -538,36 +524,29 @@ def rollaxis(img, axis, inverse=False):
 
     return img.reordered_axes(order).reordered_reference(order)
 
+
 def synchronized_order(img, target_img,
                        axes=True,
                        reference=True):
-    """
-    Take an Image, and reorder its reference and
-    axes to match target_img.
+    """ Reorder `img` reference and axes to match `target_img`
 
     Parameters
     ----------
-
     img : Image
-
     target_img : Image
-
     axes : bool, optional
         If True, synchronize the order of the axes.
-
     reference : bool, optional
         If True, synchronize the order of the reference coordinates.
 
     Returns
     -------
-
     newimg : Image
         An Image satisfying newimg.axes == target.axes (if axes == True), 
         newimg.reference == target.reference (if reference == True).
     
     Examples
     --------
-
     >>> data = np.random.standard_normal((3,4,7,5))
     >>> im = Image(data, AffineTransform.from_params('ijkl', 'xyzt', np.diag([1,2,3,4,1])))
     >>> im_scrambled = im.reordered_axes('iljk').reordered_reference('txyz')
@@ -608,12 +587,10 @@ def synchronized_order(img, target_img,
     True
     >>> print im_unscrambled4.reference == im.reference
     True
-
     """
     # Caution, we can't just use
     # target_img.reference because it's always 3-dimensional
     # if isinstance(target_img, LPIImage)
-
     target_axes = target_img.axes # = target_img.coordmap.function_domain
     target_reference = target_img.coordmap.function_range # not always = target_image.reference
     if axes:

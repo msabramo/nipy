@@ -48,19 +48,16 @@ class FmriImageList(ImageList):
         (20, 2, 20, 20)
         >>> print asarray(ilist[4]).shape
         (2, 20, 20)
-
         """
         ImageList.__init__(self, images=images)
         if volume_start_times is None:
             volume_start_times = 1.
-
         v = asarray(volume_start_times)
         if v.shape == (len(self.list),):
             self.volume_start_times = volume_start_times
         else:
             v = float(volume_start_times)
             self.volume_start_times = arange(len(self.list)) * v
-
         self.slice_times = slice_times
 
     def __getitem__(self, index):

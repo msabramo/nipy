@@ -55,7 +55,8 @@ def resample_img2img(source, target, order=3):
     return resimg
 
 
-def resample(image, target, mapping, shape, order=3):
+def resample(image, target, mapping, shape, order=3,
+             preserve_dtype=False, **interp_kws):
     """ Resample `image` to `target` CoordinateMap
 
     Use a "world-to-world" mapping `mapping` and spline interpolation of a 
@@ -81,6 +82,18 @@ def resample(image, target, mapping, shape, order=3):
        shape of output array, in target.function_domain
     order : int, optional
        what order of interpolation to use in `scipy.ndimage`
+    preserve_dtype : bool, optional
+       Whether to preserve the data dtype in the underlying
+       resampling.  Default is False.   If True, you may lose
+       precision in the resampling.
+    **interp_kws : dict, optional
+       Keyword parameters for interpolating routine
+       (ndimage.map_coordinates). Includes:
+       
+       * mode --  Points outside the boundaries of the input are filled
+                  according to the given mode ('constant', 'nearest',
+                  'reflect' or 'wrap'). Default is 'constant'.
+       * cval -- fill value if mode is 'constant'
 
     Returns
     -------
@@ -114,17 +127,26 @@ def resample(image, target, mapping, shape, order=3):
         # interpolator evaluates image at values image.coordmap.function_range,
         # i.e. physical coordinates rather than voxel coordinates
         grid = ArrayCoordMap.from_shape(TV2IW, shape)
-        interp = ImageInterpolator(image, order=order)
-        idata = interp.evaluate(grid.transposed_values)
+        interp = ImageInterpolator(image, order=order,
+                                   preserve_dtype=preserve_dtype)
+        idata = interp.evaluate(grid.transposed_values, **interp_kws)
         del(interp)
     else:
         TV2IV = compose(image.coordmap.inverse(), TV2IW)
         if isinstance(TV2IV, AffineTransform):
             A, b = affines.to_matrix_vector(TV2IV.affine)
-            idata = affine_transform(np.asarray(image), A,
+            data = image.get_data()
+            if preserve_dtype:
+                out_dtype = data.dtype
+            else:
+                out_dtype = np.float
+            idata = affine_transform(data,
+                                     A,
                                      offset=b,
                                      output_shape=shape,
-                                     order=order)
+                                     output=out_dtype,
+                                     order=order,
+                                     **interp_kws)
         else:
             interp = ImageInterpolator(image, order=order)
             grid = ArrayCoordMap.from_shape(TV2IV, shape)

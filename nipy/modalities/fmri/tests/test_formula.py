@@ -169,16 +169,26 @@ def test_formula_property():
     assert_equal(f.design_expr, [t1])
 
 
-def test_mul():
+@parametric
+def test_factor_add_mul():
+    # For further thought; should factors of the same name overwrite
+    # previous factors (common namespace)?  Or raise an error?  For
+    # example, what should the behavior be for 'a = Factor('gender',
+    # ('M', 'F'))' followed by 'a = Factor('gender', ('M', 'F',
+    # 'other'))'?
     f = F.Factor('t', [2,3])
     f2 = F.Factor('t', [2,3,4])
     t2 = f['t_2']
     x = F.Term('x')
-    
-    yield assert_equal, t2, t2*t2
-    yield assert_equal, f, f*f
-    yield assert_false, f == f2
-    yield assert_equal, set((t2*x).atoms()), set([t2,x])
+    yield assert_equal(t2, t2*t2)
+    yield assert_equal(f, f*f)
+    yield assert_false(f == f2)
+    yield assert_equal(set((t2*x).atoms()), set([t2,x]))
+    # test whether factor plus factor works.  Note here, that, if the
+    # factors have the same name, adding creates a new factor that is
+    # the union of the two same-named factors
+    fpf = f + f2
+    yield assert_equal(len(fpf.params), 3)
 
 
 def test_make_recarray():

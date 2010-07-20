@@ -170,7 +170,7 @@ class Term(sympy.Symbol):
             return self
         else:
             return sympy.Symbol.__mul__(self, other)
-
+    
     __rmul__ = __mul__
 
 
@@ -556,7 +556,7 @@ class Formula(object):
         """
         if not is_formula(other):
             raise ValueError('only Formula objects can be added to a Formula')
-        f = self.__class__(np.hstack([self.terms, other.terms]))
+        f = Formula(np.hstack([self.terms, other.terms]))
         return f
 
     def __sub__(self, other):

@@ -16,6 +16,15 @@ from nipy.testing import (assert_almost_equal, assert_true,
 
 
 @parametric
+def test_term():
+    x = F.Term('x')
+    yield assert_equal(x, x)
+    yield assert_equal(x + x, x)
+    yield assert_equal(x * 1, x)
+    yield assert_equal(x * 2, x)
+
+
+@parametric
 def test_terms():
     t, = F.terms('a')
     a, b, c = F.Term('a'), F.Term('b'), F.Term('c')

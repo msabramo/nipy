@@ -164,6 +164,15 @@ class Term(sympy.Symbol):
         else:
             return sympy.Symbol.__add__(self, other)
 
+    def __mul__(self, other):
+        other = sympy.Mul(other)
+        if isinstance(other, sympy.Number):
+            return self
+        else:
+            return sympy.Symbol.__mul__(self, other)
+
+    __rmul__ = __mul__
+
 
 # time symbol
 T = Term('t')

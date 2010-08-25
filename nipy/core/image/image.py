@@ -15,12 +15,12 @@ import numpy as np
 
 from nipy.utils.onetime import setattr_on_read
 
-# These imports are used in the fromarray and subsample 
+# These imports are used in the fromarray and subsample
 # functions only, not in Image
 
-from ..reference.coordinate_map import (AffineTransform, 
-                              CoordinateSystem,
-                              CoordinateMap)
+from ..reference.coordinate_map import (AffineTransform,
+                                        CoordinateSystem,
+                                        CoordinateMap)
 from ..reference.array_coords import ArrayCoordMap
 
 __all__ = ['fromarray', 'subsample']
@@ -96,7 +96,7 @@ class Image(object):
             return self.coordmap.affine
         raise AttributeError, 'Nonlinear transform does not have an affine.'
     _doc['affine'] = "Affine transformation if one exists."
-    
+
     ###################################################################
     #
     # Properties
@@ -138,7 +138,7 @@ class Image(object):
 
     def __init__(self, data, coordmap, metadata={}):
         """Create an `Image` object from array and `CoordinateMap` object.
-        
+
         Images are most often created through the module functions load and
         fromarray.
 
@@ -147,7 +147,7 @@ class Image(object):
         data : array
         coordmap : `AffineTransform` object
         metadata : dict
-        
+
         See Also
         --------
         load : load `Image` from a file
@@ -177,7 +177,7 @@ class Image(object):
 
     def reordered_reference(self, order=None):
         """ Return new Image with reordered output coordinates
-        
+
         New Image coordmap has reordered output coordinates. This does
         not transpose the data.
 
@@ -192,8 +192,8 @@ class Image(object):
         -------
         r_img : object
            Image of same class as `self`, with reordered output
-           coordinates. 
-        
+           coordinates.
+
         Examples
         --------
         >>> cmap = AffineTransform.from_start_step('ijk', 'xyz', [1,2,3],[4,5,6], 'domain', 'range')
@@ -234,8 +234,8 @@ class Image(object):
         -------
         r_img : object
            Image of same class as `self`, with reordered output
-           coordinates. 
-        
+           coordinates.
+
         Examples
         --------
         >>> cmap = AffineTransform.from_start_step('ijk', 'xyz', [1,2,3],[4,5,6], 'domain', 'range')
@@ -285,7 +285,7 @@ class Image(object):
         ----------
         **names_dict : dict
            with keys being old names, and values being new names
-           
+
         Returns
         -------
         newimg : Image
@@ -311,7 +311,7 @@ class Image(object):
         ----------
         **names_dict : dict
            with keys being old names, and values being new names
-           
+
         Returns
         -------
         newimg : Image
@@ -346,7 +346,7 @@ class Image(object):
 
     def __getitem__(self, slice_object):
         """ Slicing an image returns an Image.
-        
+
         Just calls the function subsample.
         """
         warnings.warn('slicing Images is deprecated, '
@@ -377,7 +377,7 @@ class Image(object):
 
 class SliceMaker(object):
     """ This class just creates slice objects for image resampling
-    
+
     It only has a __getitem__ method that returns its argument.
 
     XXX Wouldn't need this if there was a way
@@ -393,14 +393,14 @@ slice_maker = SliceMaker()
 
 
 def subsample(img, slice_object):
-    """ Subsample an image. 
+    """ Subsample an image.
 
     Parameters
     ----------
     img : Image
     slice_object: int, slice or sequence of slice
        An object representing a numpy 'slice'.
-    
+
     Returns
     -------
     img_subsampled: Image
@@ -474,7 +474,7 @@ def rollaxis(img, axis, inverse=False):
        Image whose axes and reference coordinates are to be reordered
        by rolling.
     axis : str or int
-       Axis to be rolled, can be specified by name or 
+       Axis to be rolled, can be specified by name or
        as an integer.
     inverse : bool, optional
        If inverse is True, then axis must be an integer and the first
@@ -554,9 +554,9 @@ def synchronized_order(img, target_img,
     Returns
     -------
     newimg : Image
-       An Image satisfying newimg.axes == target.axes (if axes == True), 
+       An Image satisfying newimg.axes == target.axes (if axes == True),
        newimg.reference == target.reference (if reference == True).
-    
+
     Examples
     --------
     >>> data = np.random.standard_normal((3,4,7,5))
@@ -572,10 +572,10 @@ def synchronized_order(img, target_img,
 
     >>> data2 = np.random.standard_normal((3,11,9,4))
     >>> im2 = Image(data, AffineTransform.from_params('ijkl', 'xyzt', np.diag([1,2,3,4,1])))
-    >>> 
+    >>>
     >>> im_scrambled2 = im2.reordered_axes('iljk').reordered_reference('xtyz')
     >>> im_unscrambled2 = synchronized_order(im_scrambled2, im)
-    >>> 
+    >>>
     >>> im_unscrambled2.coordmap == im.coordmap
     True
 
@@ -583,7 +583,7 @@ def synchronized_order(img, target_img,
 
     >>> data3 = np.random.standard_normal((3,11,9,4))
     >>> im3 = Image(data3, AffineTransform.from_params('ijkl', 'xyzt', np.diag([1,9,3,-2,1])))
-    >>> 
+    >>>
     >>> im_scrambled3 = im3.reordered_axes('iljk').reordered_reference('xtyz')
     >>> im_unscrambled3 = synchronized_order(im_scrambled3, im)
     >>> im_unscrambled3.axes == im.axes
@@ -615,7 +615,7 @@ def is_image(obj):
     This allows us to test for something that is duck-typing an image.
 
     For now an array must have a 'coordmap' attribute, and a callable
-    '__array__' attribute. 
+    '__array__' attribute.
 
     Parameters
     ----------

@@ -1,22 +1,13 @@
 An Introduction to Smoothing
 ============================
 
-Smoothing is a process by which data points are averaged with their
-neighbours in a series, such as a time series, or image. This
-(usually) has the effect of blurring the sharp edges in the
-smoothed data. Smoothing is sometimes referred to as filtering,
-because smoothing has the effect of suppressing high frequency
-signal and enhancing low frequency signal. There are many different
-methods of smoothing, but here we discuss smoothing with a Gaussian
-kernel. We hope we will succeed in explaining this phrase in the
-explanation below.
-
-This page is designed to be read in conjunction with the matlab
-commands that were used to make the figures. The code makes some of
-the ideas a little clearer, to those with some familiarity with
-matlab. The matlab commands are contained in the file
-`http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m <http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m>`_
-
+Smoothing is a process by which data points are averaged with their neighbours
+in a series, such as a time series, or image. This (usually) has the effect of
+blurring the sharp edges in the smoothed data. Smoothing is sometimes referred
+to as filtering, because smoothing has the effect of suppressing high frequency
+signal and enhancing low frequency signal. There are many different methods of
+smoothing, but here we discuss smoothing with a Gaussian kernel. We hope we will
+succeed in explaining this phrase in the explanation below.
 
 Some example data for smoothing
 -------------------------------
@@ -25,37 +16,54 @@ Here is a set of data, made out of random numbers, that we will use
 as a pretend time series, or a single line of data from one plane
 of an image.
 
-|sm\_eg\_data|
+.. plot::
+    :context:
+    :nofigs:
+    :include-source:
 
-The numbers were generated with matlab, by creating 40 successive
-random numbers from a normal distribution. See the
-`http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m <http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m>`_
-file for how to do this.
+    import numpy as np
+    np.random.seed(5)
 
+    # Create 40 numbers from a random normal distribution
+    n = 40
+    x = np.arange(n)
+    y = np.random.normal(size=(n,))
 
+Let's plot that:
+
+.. plot::
+    :context:
+    :include-source:
+
+    import matplotlib.pyplot as plt
+
+    plt.bar(x, y)
 
 The Gaussian kernel
 -------------------
 
-The 'kernel' for smoothing, defines the shape of the function that
-is used to take the average of the neighbouring points. A Gaussian
-kernel is a kernel with the shape of a Gaussian (normal
-distribution) curve. Here is a standard Gaussian, with a mean of 0
-and a sigma (=population standard deviation) of 1. |sm\_gauss| In
-the standard statistical way, we have defined the width of the
-Gaussian shape in terms of sigma. However, when the Gaussian is
-used for smoothing, it is usual to describe the width of the
-Gaussian with another related measure, the Full Width at Half
-Maximum (FWHM).
-
-The FWHM is the width of the kernel, at half of the maximum of the
-height of the Gaussian. Thus, for the standard Gaussian above, the
-maximum height is ~0.4. The width of the kernel at 0.2 (on the Y
-axis) is the FWHM. As x = -1.175 and 1.175 when y = 0.2, the FWHM
-is in fact 2.35. The FWHM is related to sigma by the formula
-(matlab format):
+The 'kernel' for smoothing, defines the shape of the function that is used to
+take the average of the neighbouring points. A Gaussian kernel is a kernel with
+the shape of a Gaussian (normal distribution) curve. Here is a standard
+Gaussian, with a mean of 0 and a sigma (=population standard deviation) of 1.
 
 
+.. plot::
+    :context:
+    :include-source:
+
+    # the Gaussian kernel shown
+
+In the standard statistical way, we have defined the width of the Gaussian shape
+in terms of sigma. However, when the Gaussian is used for
+smoothing, it is usual to describe the width of the Gaussian with another
+related measure, the Full Width at Half Maximum (FWHM).
+
+The FWHM is the width of the kernel, at half of the maximum of the height of the
+Gaussian. Thus, for the standard Gaussian above, the maximum height is ~0.4. The
+width of the kernel at 0.2 (on the Y axis) is the FWHM. As x = -1.175 and 1.175
+when y = 0.2, the FWHM is in fact 2.35. The FWHM is related to sigma by the
+formula (python format):
 
 ::
 
@@ -81,7 +89,7 @@ we don't do an overall scaling of the values aftern smoothing, we
 then divide the values in the Gaussian curve by the total area
 under the curve, so that the values add up to one (see the
 `http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m <http://imaging.mrc-cbu.cam.ac.uk/scripts/smoothtalk.m>`_
-file for how to do this in matlab):
+file for how to do this in python):
 
 |sm\_gauss\_14|
 

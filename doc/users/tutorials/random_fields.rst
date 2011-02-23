@@ -3,93 +3,139 @@ Thresholding with Random Field Theory
 
 Contents
 
-
-#. `Thresholding with Random Field Theory <#head-80b6b23b33d3f3b14a4c67c932b922e36121b8f2>`_
-   
-   #. `Introduction <#head-a48dcb593656f6224488b4fa87837612d6d690c6>`_
-   #. `The multiple comparison problem <#head-abcfd6d14707f90d1de1716fc4004c8277fb3e21>`_
-   #. `Why not a Bonferroni correction? <#head-61006ca3ee726e34ddb1106fb3b8561dec1f0710>`_
-   #. `Spatial correlation <#head-d60cfb4fc7188a213461b9c2fab2ee39c868950b>`_
-   #. `Spatial correlation and independent observations <#head-89ca8942cac9cc56dcd9b6a3328056a688c7e4f6>`_
-   #. `Smoothed images and independent observations <#head-9babd855284669a6114a69c3edc6ee833acd795b>`_
-   #. `Using Random Field Theory <#head-53dd255c86034baef68e8ffa17ef188438f36112>`_
-   #. `What is a resel? <#head-f031e929b679016d9d1ba541b6fd57f3cd033e53>`_
-   #. `What is the Euler characteristic? <#head-652fea030e544fa6d036e334a4275a4b69703000>`_
-   #. `How does the Euler characteristic give a Z threshold? <#head-71b01aa2a7da6cc4438a6a1a6add9ea29dc0986c>`_
-   #. `How does the Random Field maths compare to the Bonferroni correction? <#head-504893e8afe62f1e3e8aaf3cb368a1d389261ef5>`_
-   #. `To three dimensions <#head-105416767cc46de89f213b2a38460d3aeedc5c63>`_
-   #. `Random fields and SPM96 <#head-6aa730c92da28b0c27f8d209d5a66ef1c7dde434>`_
-   #. `More sophisticated Random Fielding <#head-a03fc4cba42d7a764beec07ef5fa6b164cdd7d68>`_
-   #. `Random fields and SPM99 <#head-a1ba748b7017d25c4129607f3b15e2e93e64e7a8>`_
-   #. `Other ways of detecting significant signal <#head-2b27612058857664890779ed7e763bc98acc0606>`_
-   #. `Other sources of information <#head-629e79cffa3d96d06a2f7a92d46e773bfe12519e>`_
-   #. `Conclusion <#head-78a84926be677f5e92f4048f10301adb37d1d125>`_
-   #. `References <#head-7874dc5f0df65d1cd121a1c059824d0f9b4f6f92>`_
-
-
-A few notes to begin. First: you can easily read this page without
-knowing any matlab programming, but you may gain extra benefit if
-you read it with the matlab code that will generate the figures.
-This code is contained in the matlab
-scripthttp://imaging.mrc-cbu.cam.ac.uk/scripts/randomtalk.m.
-Second: some of the figures do not display well. Please click on
-any figure to get a pdf file that has much better detail. Last,
-this page is based primarily on the Worsley 1992 paper (see refs
-below). For me, this paper is the most comprehensible of the
-various treatments of this subject. Please refer to this paper and
-the Worsley 1996 paper for more detail on the issues here
-discussed.
-
-See also
-`An introduction to multiple hypothesis testing and brain data <http://www.irsl.org/%7Efet/Presentations/multhip/matstat.html>`_
-by `Federico Turkeimer <http://www.irsl.org/%7Efet/>`_ for a
-general introduction to the multiple comparison.
+A few notes to begin. First: you can easily read this page without knowing any
+python programming, but you may gain extra benefit if you read it with the
+python code that will generate the figures.  Second: some of the figures do not
+display well. Please click on any figure to get a pdf file that has much better
+detail. Last, this page is based primarily on the [worsley1992]_ paper. For me,
+this paper is the most comprehensible of the various treatments of this subject.
+Please refer to this paper and the [worsley1996]_ paper for more detail on the
+issues here discussed.
 
 This page became the
 `Random fields introduction <http://www.fil.ion.ucl.ac.uk/spm/doc/books/hbf2/pdfs/Ch14.pdf>`_
 chapter in the
 `the Human Brain Function second edition <http://www.fil.ion.ucl.ac.uk/spm/doc/books/hbf2/>`_
 - please see that chapter for a more up to date and better
-presented version of this page (but without the script!).
-
-
+presented version of this page (but without the code).
 
 Introduction
 ------------
 
-Most statistics packages for functional imaging data create
-statistical parametric maps. These maps have a value for a certain
-statistic at each voxel in the brain, which is the result of the
-statistical test done on the scan data for that voxel, across
-scans. For SPM96, this statistic is a Z statistic (see my
-`SPM statistics tutorial <http://imaging.mrc-cbu.cam.ac.uk/imaging/PrinciplesStatistics>`_
-).
+Most statistics packages for functional imaging data create statistical
+parametric maps. These maps have a value for a certain statistic at each voxel
+in the brain, which is the result of the statistical test done on the scan data
+for that voxel, across scans. For SPM, this statistic is usually an F or t
+statistic at each voxel.  See our :ref:`imaging statistics tutorial` for more
+detail. For each statistic value we can make a probability value from the
+statistic distribution.  For example, we can take the p value for each
+individual t statistic.  Now we have a map of p values.
 
-The null hypothesis for a particular statistical comparison
-probably will be that there is no change anywhere in the brain. For
-example, in a comparison of activation against rest, the null
-hypothesis would be that there are no differences between the scans
-in the activation condition, and the scans in the rest condition.
-This null hypothesis implies that the volume of Z scores for the
-comparison will be similar to a equivalent set of numbers from a
-random normal distribution.
+Just to make our lives easier, let's transform these probability (p) values to Z
+values, by taking the Z value from the normal distribution corresponding to the
+particular p value.  Here is a Z (normal) distribution.
 
+Transforming p values to Z scores
+---------------------------------
 
+.. plot::
+    :context:
+    :include-source:
+
+    # numpy for arrays
+    import numpy as np
+
+    # Get the normal distribution
+    from scipy.stats import norm
+
+    # values for plot of the probability density function
+    x = np.linspace(-4, 4, 1000)
+    y = norm.pdf(x)
+
+    # Import plotting routines and show
+    import matplotlib.pyplot as plt
+    plt.plot(x, y)
+    plt.xlabel('Z score')
+    plt.ylabel('p value')
+
+Let's say we have a p value of 0.2.  To get the Z score we want to know the
+value of the normal distribution $x$ such that 20 percent of the area of the
+normal distribution curve is less than $a$.  We can do this very crudely just by
+doing the cumulative sum of the probability values like this:
+
+.. plot::
+    :context:
+    :include-source:
+
+    a = 0.2
+
+    # A crude first pass at getting the area under the curve
+    ysum = np.cumsum(y) / np.cumsum(y)[-1]
+
+    # Find the z score for which area under curve is a
+    ysum_lt_a = ysum < a
+    z_for_p_approx = x[ysum_lt_a][-1]
+
+    # Plot this
+    plt.plot(x, y)
+    plt.fill_between(x[ysum_lt_a], y[ysum_lt_a])
+    plt.annotate('Z approx', xy=(z_for_p_approx, 1e-5),
+        xycoords='data', xytext=(50, 30), textcoords='offset points',
+        arrowprops=dict(arrowstyle="->"))
+
+Of course, we can do better than this crude approximation, using the inverse of
+the *cumulative density function* of the normal distribution.
+
+.. plot::
+    :context:
+    :nofigs:
+    :include-source:
+
+    # Get the normal distribution
+    from scipy.stats import norm
+    # Get the cumulative density function (area under the probability density
+    # function)
+    norm_cdf = norm.cdf
+    # Get the inverse of the cdf (also called the percent point function)
+    inv_norm_cdf = norm.ppf
+    # Evaluate this to get Z score corresponding to p value
+    z_for_p = inv_norm_cdf(a)
+
+The null hypothesis
+
+The null hypothesis for a particular statistical comparison is likely to be
+that there is no change anywhere in the brain. For example, in a comparison of
+activation against rest, the null hypothesis would be that there are no
+differences between the scans in the activation condition, and the scans in the
+rest condition.  This null hypothesis implies that the volume of Z values for
+the comparison will be similar to a equivalent set of numbers from a random
+normal distribution.
 
 The multiple comparison problem
 -------------------------------
 
 The question then becomes; how do we decide whether some of the Z
-statistics we see in our SPM96 map are larger (more positive) than
-we would expect in a similar volume of random numbers?So, in a
-typical SPM Z map, we have, say, 200000 Z scores. Because we have
-so many Z scores, even if the null hypothesis is true, we can be
-sure that some of these Z scores will appear to be significant at
-standard statistical thresholds for the the individual Z scores,
-such as p<0.05 or p<0.01. These p values are eqivalent to Z = 1.64
-and 2.33 respectively - see the
-`http://imaging.mrc-cbu.cam.ac.uk/scripts/randomtalk.m <http://imaging.mrc-cbu.cam.ac.uk/scripts/randomtalk.m>`_
-file.
+statistics we have from our p value map are larger (more positive) than
+we would expect in a similar volume of random numbers? In a
+typical SPM brain map, we have, say, 200000 p values and therefore Z scores.
+Because we have so many Z scores, even if the null hypothesis is true, we can be
+sure that some of these Z scores will appear to be significant at standard
+statistical thresholds for the the individual Z scores, such as $p<0.05$ or
+$p<0.01$.  The meaning of the $p<0.05$ threshold here is the threshold $t$ such
+that only 5% of Z scores will be *more positive* than $t$ - so, from our p to Z
+transform, we actually want the Z score threshold for $p>0.95$, and $p>0.99$. 
+
+.. plot::
+    :context:
+    :nofigs:
+    :include-source:
+
+    z_threshes = inv_norm_cdf([0.95, 0.99])
+
+These p values turn out to be eqivalent to Z = 1.64 and 2.33 respectively.
+
+>>> z_threshes
+
 
 So, if we tell SPM to show us only Z scores above 2.33, we would
 expect a number of false positives, even if the null hypothesis is
@@ -523,22 +569,25 @@ Here ends the lesson. I hope that it has been of some use. I would
 be very glad to hear from anyone with suggestions for improvements,
 detected errors, or other feedback.
 
-`MatthewBrett <http://imaging.mrc-cbu.cam.ac.uk/imaging/MatthewBrett>`_
-19/8/99 *(FB)*
+`Jarrod Millman`_
+`Matthew Brett`_
 
-
+First written 19/8/99 *(FB)*
+Updated through Feb 2011
 
 References
 ----------
 
-Worsley, K.J., Marrett, S., Neelin, P., and Evans, A.C. (1992).
-`A three-dimensional statistical analysis for CBF activation studies in human brain <http://www.math.mcgill.ca/%7Ekeith/jcbf/jcbf.abstract.html>`_.
-Journal of Cerebral Blood Flow and Metabolism, 12:900-918.
+.. [worsley1992] Worsley, K.J., Marrett, S., Neelin, P., and Evans, A.C.
+    (1992).  `A three-dimensional statistical analysis for CBF activation studies in
+    human brain <http://www.math.mcgill.ca/%7Ekeith/jcbf/jcbf.abstract.html>`_.
+    Journal of Cerebral Blood Flow and Metabolism, 12:900-918.
 
-Worsley, K.J., Marrett, S., Neelin, P., Vandal, A.C., Friston,
-K.J., and Evans, A.C. (1996).
-`A unified statistical approach for determining significant signals in images of cerebral activation <http://www.math.mcgill.ca/%7Ekeith/unified/unified.abstract.html>`_.
-Human Brain Mapping, 4:58-73.
+.. [worsley1996] Worsley, K.J., Marrett, S., Neelin, P., Vandal, A.C., Friston,
+    K.J., and Evans, A.C. (1996).  `A unified statistical approach for determining
+    significant signals in images of cerebral activation
+    <http://www.math.mcgill.ca/%7Ekeith/unified/unified.abstract.html>`_.  Human
+    Brain Mapping, 4:58-73.
 
 Friston KJ, Worsley KJ, Frackowiak RSJ, Mazziotta JC, Evans AC
 (1994).

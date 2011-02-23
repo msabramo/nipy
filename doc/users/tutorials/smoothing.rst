@@ -47,7 +47,6 @@ take the average of the neighbouring points. A Gaussian kernel is a kernel with
 the shape of a Gaussian (normal distribution) curve. Here is a standard
 Gaussian, with a mean of 0 and a sigma (=population standard deviation) of 1.
 
-
 .. plot::
     :context:
     :include-source:

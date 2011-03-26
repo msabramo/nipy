@@ -5,6 +5,7 @@ import warnings
 from shutil import rmtree
 from tempfile import mkstemp, mkdtemp
 
+import numpy as np
 from nipy.testing import TestCase, funcfile, dec
 
 from nipy.io.api import load_image
@@ -12,9 +13,9 @@ from nipy.io.api import load_image
 import nipy.modalities.fmri.fmristat.model as model
 from nipy.modalities.fmri.api import FmriImageList
 
+from nipy.modalities.fmri.formula import T, Formula
+
 # FIXME: these things are obsolete
-# from nipy.modalities.fmri.formula import \
-#     ExperimentalQuantitative
 # from nipy.fixes.scipy.stats.models.contrast import Contrast
 
 def setup():
@@ -47,33 +48,36 @@ class test_fMRIstat_model(TestCase):
 
     # FIXME: This does many things, but it does not test any values
     # with asserts.
-    @dec.skipif(True)
     def testrun(self):
         funcim = load_image(funcfile)
         fmriims = FmriImageList.from_image(funcim, volume_start_times=2.)
 
-        f1 = ExperimentalQuantitative("f1", lambda t:t)
-        f2 = ExperimentalQuantitative("f1", lambda t:t**2)
-        f3 = ExperimentalQuantitative("f1", lambda t:t**3)
+        f1 = T
+        f2 = T**2
+        f3 = T**3
 
-        f = f1 + f2 + f3
-        c = Contrast(f1, f)
-        c.compute_matrix(fmriims.volume_start_times)
-        c2 = Contrast(f1 + f2, f)
-        c2.compute_matrix(fmriims.volume_start_times)
+        f = Formula([f1,f2,f3])
+        times = fmriims.volume_start_times.view(np.dtype([('t', np.float)]))
+        design, contrasts = f.design(times, contrasts={'var1':Formula([f1]),
+                                                       'var2':Formula([f1,f2])})
+
+#         c = Contrast(f1, f)
+#         c.compute_matrix(fmriims.volume_start_times)
+#         c2 = Contrast(f1 + f2, f)
+#         c2.compute_matrix(fmriims.volume_start_times)
 
         outputs = []
         outputs.append(model.output_AR1(self.ar1, fmriims, clobber=True))
         outputs.append(model.output_resid(self.resid_OLS, fmriims, 
                                           clobber=True))
-        ols = model.OLS(fmriims, f, outputs)
+        ols = model.OLSModel(fmriims, f, outputs)
         ols.execute()
 
         outputs = []
         out_fn = os.path.join(self.out_dir, 'out.nii')
-        outputs.append(model.output_T(out_fn, c, fmriims, clobber=True))
-        outputs.append(model.output_F(self.F, c2, fmriims, clobber=True))
+        outputs.append(model.output_T(out_fn, contrasts['var1'], fmriims, clobber=True))
+        outputs.append(model.output_F(self.F, contrasts['var2'], fmriims, clobber=True))
         outputs.append(model.output_resid(self.resid, fmriims, clobber=True))
         rho = load_image(self.ar1)
-        ar = model.AR1(fmriims, f, rho, outputs)
+        ar = model.AR1Model(fmriims, f, rho, outputs)
         ar.execute()

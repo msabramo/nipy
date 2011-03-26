@@ -21,7 +21,7 @@ def output_T(contrast, results, effect=None, sd=None, t=None):
     This convenience function outputs the results of a Tcontrast
     from a regression
     """
-    r = results.Tcontrast(contrast.matrix, sd=sd,
+    r = results.Tcontrast(contrast, sd=sd,
                           t=t)
 
     v = []
@@ -38,7 +38,7 @@ def output_F(results, contrast):
     This convenience function outputs the results of an Fcontrast
     from a regression
     """
-    return results.Fcontrast(contrast.matrix).F
+    return results.Fcontrast(contrast).F
 
 def output_resid(results):
     """

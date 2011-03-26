@@ -7,9 +7,8 @@ __docformat__ = 'restructuredtext'
 
 import numpy as np
 import numpy.linalg as L
-from nipy.fixes.scipy.stats.models.model import Model
 
-class NLSModel(Model):
+class NLSModel(object):
 
     """
     Class representing a simple nonlinear least squares model.
@@ -25,20 +24,16 @@ class NLSModel(Model):
             f : TODO
                 the map between the linear parameters (in the design matrix) and
                 the nonlinear parameters (theta)
-            grad :  TODO          
+            grad :  TODO
                 the gradient of f, this should be a function of an nxp design
                 matrix X and qx1 vector theta that returns an nxq matrix
                 df_i/dtheta_j where
 
                 f_i(theta) = f(X[i], theta)
-               
+
                 is the nonlinear response function for the i-th instance in
                 the model.
         """
-
-
-
-        Model.__init__(self)
         self.Y = Y
         self.design = design
         self.f = f
@@ -49,7 +44,6 @@ class NLSModel(Model):
             if self.Y.shape[0] != self.design.shape[0]:
                 raise ValueError, 'Y should be same shape as design'
 
-        
     def _Y_changed(self):
         if self.design is not None:
             if self.Y.shape[0] != self.design.shape[0]:

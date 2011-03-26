@@ -9,7 +9,8 @@ import os.path as path
 import numpy as np
 from scipy.linalg import toeplitz
 
-from nipy.fixes.scipy.stats.models.regression import OLSModel, ARModel
+from scikits.statsmodels.regression import OLS, GLSAR
+
 from nipy.fixes.scipy.stats.models.utils import pos_recipr
 
 # nipy core imports
@@ -21,7 +22,7 @@ from nipy.io.api import save_image
 # fmri imports
 from nipy.modalities.fmri.api import FmriImageList, fmri_generator
 
-import nipy.algorithms.statistics.regression as regression
+from . import regression
 
 
 class ModelOutputImage(object):
@@ -68,14 +69,15 @@ class ModelOutputImage(object):
         
 
 def model_generator(formula, data, volume_start_times, iterable=None, 
-                    slicetimes=None, model_type=OLSModel, 
+                    slicetimes=None, model_type=OLS,
                     model_params = lambda x: ()):
     """
     Generator for the models for a pass of fmristat analysis.
     """
     for i, d in matrix_generator(fmri_generator(data, iterable=iterable)):
         model_args = model_params(i) # model may depend on i
-        rmodel = model_type(formula.design(volume_start_times), *model_args)
+        times = volume_start_times.view(np.dtype([('t', np.float)]))
+        rmodel = model_type(formula.design(times), *model_args)
         yield i, d, rmodel
 
 
@@ -90,7 +92,7 @@ def results_generator(model_iterable):
         yield i, m.fit(d)
 
 
-class OLS(object):
+class OLSModel(object):
     """
     First pass through fmri_image.
 
@@ -119,7 +121,7 @@ class OLS(object):
     def execute(self):
         m = model_generator(self.formula, self.data,
                             self.volume_start_times,
-                            model_type=OLSModel)
+                            model_type=OLS)
         r = results_generator(m)
 
         def reshape(i, x):
@@ -181,7 +183,7 @@ def estimateAR(resid, design, order=1):
     return output
 
 
-class AR1(object):
+class AR1Model(object):
     """
     Second pass through fmri_image.
 
@@ -225,7 +227,7 @@ class AR1(object):
         m = model_generator(self.formula, self.data,
                             self.volume_start_times,
                             iterable=iterable,
-                            model_type=ARModel,
+                            model_type=GLSAR,
                             model_params=model_params)
         r = results_generator(m)
 
@@ -372,8 +374,8 @@ def output_resid(outfile, fmri_image, clobber=False):
         T[0,0] = (fmri_image.volume_start_times[1:] - 
                   fmri_image.volume_start_times[:-1]).mean()
         # FIXME: NIFTI specific naming here
-        innames = ["l"] + list(g.input_coords.coord_names)
-        outnames = ["t"] + list(g.output_coords.coord_names)
+        innames = ["l"] + list(g.function_domain.coord_names)
+        outnames = ["t"] + list(g.function_range.coord_names)
         cmap = AffineTransform.from_params(innames,
                                   outnames, T)
         shape = (n,) + fmri_image[0].shape

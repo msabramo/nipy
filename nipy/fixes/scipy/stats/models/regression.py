@@ -21,22 +21,17 @@ General reference for regression models:
 __docformat__ = 'restructuredtext en'
 
 import warnings
-from string import join as sjoin
-from csv import reader
 
 import numpy as np
-from scipy.linalg import norm, toeplitz
-
-from nipy.fixes.scipy.stats.models.model import LikelihoodModel, \
-     LikelihoodModelResults
-from nipy.fixes.scipy.stats.models import utils
+import numpy.lib.recfunctions as nprf
 
 from scipy import stats
-from scipy.stats.stats import ss
+from scipy.linalg import toeplitz
 
-from descriptors import setattr_on_read
+from .model import LikelihoodModel, LikelihoodModelResults
+from . import utils
 
-import numpy.lib.recfunctions as nprf
+from .descriptors import setattr_on_read
 
 def categorical(data):
     '''
@@ -125,29 +120,23 @@ class OLSModel(LikelihoodModel):
 
     Examples
     --------
-    >>> import numpy as N
-    >>>
-    >>> from nipy.modalities.fmri.formula import Term, I
+    >>> import numpy as np
+    >>> from nipy.modalities.fmri.formula import Term, Formula
     >>> from nipy.fixes.scipy.stats.models.regression import OLSModel
-    >>>
-    >>> data={'Y':[1,3,4,5,2,3,4],
-    ...       'X':range(1,8)}
-    >>> f = Term("X") + I
-    >>> f.namespace = data
-    >>>
-    >>> model = OLSModel(f.design())
+    >>> data = np.rec.fromarrays(([1,3,4,5,2,3,4], range(1,8)), names=('Y', 'X'))
+    >>> f = Formula([Term("X"), 1])
+    >>> dmtx = f.design(data, return_float=True)
+    >>> model = OLSModel(dmtx)
     >>> results = model.fit(data['Y'])
-    >>>
-    >>> results.beta
+    >>> results.theta
     array([ 0.25      ,  2.14285714])
     >>> results.t()
     array([ 0.98019606,  1.87867287])
     >>> print results.Tcontrast([0,1])
     <T contrast: effect=2.14285714286, sd=1.14062281591, t=1.87867287326, df_den=5>
-    >>> print results.Fcontrast(np.identity(2))
+    >>> print results.Fcontrast(np.eye(2))
     <F contrast: F=19.4607843137, df_den=5, df_num=2>
     """
-
     def __init__(self, design, hascons=True):
         super(OLSModel, self).__init__()
         self.initialize(design, hascons)
@@ -381,6 +370,7 @@ class OLSModel(LikelihoodModel):
                                  cov=self.normalized_cov_beta)
         return lfit
 
+
 class ARModel(OLSModel):
     """
     A regression model with an AR(p) covariance structure.
@@ -395,22 +385,17 @@ class ARModel(OLSModel):
 
     Examples
     --------
-    >>> import numpy as N
-    >>> import numpy.random as R
-    >>>
-    >>> from nipy.modalities.fmri.formula import Term, I
-    >>> from nipy.fixes.scipy.stats.models.regression import ARModel
-    >>>
-    >>> data={'Y':[1,3,4,5,8,10,9],
-    ...       'X':range(1,8)}
-    >>> f = Term("X") + I
-    >>> f.namespace = data
-    >>>
-    >>> model = ARModel(f.design(), 2)
+    >>> import numpy as np
+    >>> from nipy.modalities.fmri.formula import Term, Formula
+    >>> from nipy.fixes.scipy.stats.models.regression import ARModel, yule_walker
+    >>> data = np.rec.fromarrays(([1,3,4,5,8,9,10], range(1,8)), names=('Y', 'X'))
+    >>> f = Formula([Term("X"), 1])
+    >>> dmtx = f.design(data, return_float=True)
+    >>> model = ARModel(dmtx, 2)
     >>> for i in range(6):
     ...     results = model.fit(data['Y'])
     ...     print "AR coefficients:", model.rho
-    ...     rho, sigma = model.yule_walker(data["Y"] - results.predict)
+    ...     rho, sigma = yule_walker(data["Y"] - results.predicted)
     ...     model = ARModel(model.design, rho)
     ...
     AR coefficients: [ 0.  0.]
@@ -419,7 +404,7 @@ class ARModel(OLSModel):
     AR coefficients: [-0.61887622 -0.88137957]
     AR coefficients: [-0.61894058 -0.88152761]
     AR coefficients: [-0.61893842 -0.88152263]
-    >>> results.beta
+    >>> results.theta
     array([ 1.58747943, -0.56145497])
     >>> results.t()
     array([ 30.796394  ,  -2.66543144])
@@ -451,17 +436,22 @@ class ARModel(OLSModel):
         Perform an iterative two-stage procedure to estimate AR(p)
         parameters and regression coefficients simultaneously.
 
-        :Parameters:
-            Y : TODO
-                TODO
-            niter : ``integer``
-                the number of iterations
+        Parameters
+        ----------
+        Y : ndarray
+            data to which to fit model
+        niter : optional, int
+            the number of iterations (default 3)
+
+        Returns
+        -------
+        None
         """
         for i in range(niter):
             self.initialize(self.design)
             results = self.fit(Y)
-            self.rho, _ = yule_walker(Y - results.predict,
-                                      order=self.order, df=self.df)
+            self.rho, _ = yule_walker(Y - results.predicted,
+                                      order=self.order, df=self.df_resid)
 
     def whiten(self, X):
         """
@@ -538,12 +528,12 @@ class WLSModel(OLSModel):
 
     >>> import numpy as N
     >>>
-    >>> from nipy.modalities.fmri.formula import Term, I
+    >>> from nipy.modalities.fmri.formula import Term, I, Formula
     >>> from nipy.fixes.scipy.stats.models.regression import WLSModel
     >>>
     >>> data={'Y':[1,3,4,5,2,3,4],
     ...       'X':range(1,8)}
-    >>> f = Term("X") + I
+    >>> f = Formula([Term("X"), I])
     >>> f.namespace = data
     >>>
     >>> model = WLSModel(f.design(), weights=range(1,8))
@@ -608,8 +598,6 @@ class RegressionResults(LikelihoodModelResults):
         """
         Residuals from the fit.
         """
-        beta = self.theta # the LikelihoodModelResults has parameters named 'theta'
-        X = self.model.design
         return self.Y - self.predicted
 
     @setattr_on_read

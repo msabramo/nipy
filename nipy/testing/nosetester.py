@@ -5,7 +5,7 @@ Despecializes some of numpy's testing framework
 Sets doctest run to default
 """
 
-from ..fixes.numpy.testing.nosetester import NoseTester
+from ..fixes.numpy.testing.nosetester import NoseTester, import_nose
 
 class NipyNoseTester(NoseTester):
     """ Numpy-like testing class
@@ -16,9 +16,11 @@ class NipyNoseTester(NoseTester):
     """
     excludes = []
 
-    def _get_doctester(self):
+    def _get_custom_doctester(self):
         """ Use standard doctester """
-        return None
+        import_nose()
+        from .doctester import NipyDoctest
+        return NipyDoctest()
 
     def test(self, label='fast', verbose=1, extra_argv=None, doctests=True,
              coverage=False):
@@ -59,10 +61,10 @@ class NipyNoseTester(NoseTester):
         Notes
         -----
         Each nipy module should expose `test` in its namespace to run all tests
-        for it.  For example, to run all tests for nipy.algorithms::
+        for it.  For example, to run all tests for nipy.algorithms:
 
-          >>> import nipy.algorithms
-          >>> nipy.algorithms.test()
+        >>> import nipy.algorithms
+        >>> nipy.algorithms.test() #doctest: +SKIP
         """
         return super(NipyNoseTester, self).test(label, verbose, extra_argv,
-                                            doctests, coverage)
+                                                doctests, coverage)

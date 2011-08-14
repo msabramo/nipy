@@ -7,6 +7,15 @@ This module implements ``test()`` and ``bench()`` functions for NumPy modules.
 import os
 import sys
 
+def setup_module():
+    # We don't want to run doctests in this module
+    try:
+        import nose.plugins
+    except ImportError:
+        return
+    raise nose.plugins.skip.SkipTest('Skipping tests for nosetester module')
+
+
 def get_package_name(filepath):
     """
     Given a path where a package is installed, determine its name.
@@ -241,7 +250,7 @@ class NoseTester(object):
         if plug is None:
             # use standard doctesting
             if doctests and not doctest_argv:
-                argv += '--with-doctest'
+                argv += ['--with-doctest']
         else: # custom doctesting
             if doctest_argv: # in fact the unplugger would take care of this
                 argv.remove('--with-doctest')

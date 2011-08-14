@@ -208,9 +208,9 @@ class NumpyDoctest(npd.Doctest):
         # Note: __file__ allows the doctest in NoseTester to run
         # without producing an error
         test.globs = {'__builtins__':__builtins__,
-                        '__file__':'__main__',
-                        '__name__':'__main__',
-                        'np':numpy}
+                      '__file__':'__main__',
+                      '__name__':'__main__',
+                      'np':numpy}
         # add appropriate scipy import for SciPy tests
         if 'scipy' in pkg_name:
             p = pkg_name.split('.')
@@ -243,7 +243,8 @@ class NumpyDoctest(npd.Doctest):
             self._set_test_context(test)
             yield self.doctest_case_class(test,
                                           optionflags=self.doctest_optflags,
-                                          checker=self.out_check_class())
+                                          checker=self.out_check_class(),
+                                          result_var=None)
 
     # Add an afterContext method to nose.plugins.doctests.Doctest in order
     # to restore print options to the original state after each doctest

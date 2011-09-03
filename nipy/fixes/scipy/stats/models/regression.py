@@ -502,6 +502,71 @@ def yule_walker(X, order=1, method="unbiased", df=None, inv=False):
     return rho, np.sqrt(sigmasq)
 
 
+def ar_bias_correcter(design, calc_beta, order=1):
+    """ Covariance bias correcting matrix for design and AR order `order`
+
+    Parameters
+    ----------
+    design : array
+        Design matrix
+    calc_beta : array
+        Moore-Penrose pseudoinverse of the (maybe) whitened design matrix.  This
+        is matrix that, when applied to the (maybe whitened) data, produces the
+        betas.
+    order : int, optional
+        Order p of AR(p) process
+
+    Returns
+    -------
+    invM : array
+        Matrix to bias correct estimated covariance matrix in calculating the AR
+        coefficients
+    """
+    R = np.eye(design.shape[0]) - np.dot(design, calc_beta)
+    M = np.zeros((order+1,)*2)
+    I = np.eye(R.shape[0])
+    for i in range(order+1):
+        Di = np.dot(R, np.toeplitz(I[i]))
+        for j in range(order+1):
+            Dj = np.dot(R, np.toeplitz(I[j]))
+            M[i,j] = np.diag((np.dot(Di, Dj))/(1.+(i>0))).sum()
+    return spl.inv(M)
+
+
+def ar_bias_correct(results, order, invM=None):
+    """ Apply bias correction in calculating AR(p) coefficients from `results`
+
+    Parameters
+    ----------
+    results : results object
+        Has attributes ``resid``, ``scale``, ``df_resid`` and (see below) maybe
+        ``model``
+    order : int
+        Order ``p`` of AR(p) model
+    invM : None or array
+        Known bias correcting matrix for covariance.  If None, calculate from
+        ``results.model``
+
+    Returns
+    -------
+    rho : array
+        Bias-corrected AR(p) coefficients
+    """
+    if invM is None:
+        model = results.model
+        invM = ar_bias_correcter(model.design, model.calc_beta, order)
+    # Allows results residuals to have shapes other than 2D
+    resid = results.resid.reshape((results.resid.shape[0], -1))
+    sum_sq = results.scale.reshape(resid.shape[1:]) * results.df_resid
+    cov = np.zeros((order + 1,) + sum_sq.shape)
+    cov[0] = sum_sq
+    for i in range(1, order+1):
+        cov[i] = np.add.reduce(resid[i:] * resid[0:-i], 0)
+    cov = np.dot(invM, cov)
+    output = cov[1:] * pos_recipr(cov[0])
+    return np.squeeze(output)
+
+
 class WLSModel(OLSModel):
     """
     A regression model with diagonal but non-identity covariance structure.
@@ -517,11 +582,12 @@ class WLSModel(OLSModel):
     >>> dmtx = f.design(data, return_float=True)
     >>> model = WLSModel(dmtx, weights=range(1,8))
     >>> results = model.fit(data['Y'])
-    >>> results.theta
+    >>> results.theta and (see below) maybe ``model``
     array([ 0.0952381 ,  2.91666667])
     >>> results.t()
     array([ 0.35684428,  2.0652652 ])
-    >>> print results.Tcontrast([0,1]) #doctest: +FP_6DP
+    >>> print results.Tcontrast([0,1]) #doctest: +FP_6DP and (see below) maybe
+    >>> ``model``
     <T contrast: effect=2.91666666667, sd=1.41224801095, t=2.06526519708, df_den=5>
     >>> print results.Fcontrast(np.identity(2)) #doctest: +FP_6DP
     <F contrast: F=26.9986072423, df_den=5, df_num=2>

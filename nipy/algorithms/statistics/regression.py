@@ -1,12 +1,22 @@
 # emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
 # vi: set ft=python sts=4 ts=4 sw=4 et:
-"""
-This module provides various convenience functions for extracting
-statistics from regression analysis techniques to model the
-relationship between the dependent and independent variables.
+""" Convenience functions and classes for statistics on images.
 
-As well as a convenience class to output the result, RegressionOutput
+These functions and classes support the return of statistical test results from
+interations through data.
 
+The typical case is for FMRI, where we may iterate over time slices, running
+contrasts and returning T or F contrast results.
+
+For the case of the output_T function, for example, we may have an iteration
+through slices of a 4D dataset, for which we can get a 2D results object, and we
+want to return the several outputs from a t contrast from that results object
+and the given contrast.
+
+Then regression output classes take callables, which typically take a results
+object as input, or a results object and a contrast, and return a result or a
+sequence of results.  The same class knows how to put those results into
+containers that it holds ready for these results, during the iteration.
 """
 
 __docformat__ = 'restructuredtext'

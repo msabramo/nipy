@@ -5,7 +5,7 @@ import numpy as np
 
 from nipy.fixes.scipy.stats.models.regression import OLSModel
 
-from ..regression import output_T, output_F
+from ..regression import output_T, output_F, AREstimator
 
 from nose.tools import assert_true, assert_equal, assert_raises
 
@@ -60,5 +60,13 @@ def test_output_F():
     # Check we get required outputs
     exp_f = results.t(0) **2
     assert_array_almost_equal(exp_f, output_F(c1, results))
+
+
+def test_ar_estimator():
+    # More or less a smoke test
+    are = AREstimator(MODEL,2)
+    rhos = are(RESULTS)
+    assert_equal(len(rhos), 2)
+
 
 

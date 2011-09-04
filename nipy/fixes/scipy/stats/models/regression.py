@@ -502,8 +502,14 @@ def yule_walker(X, order=1, method="unbiased", df=None, inv=False):
     return rho, np.sqrt(sigmasq)
 
 
-def ar_bias_correcter(design, calc_beta, order=1):
-    """ Covariance bias correcting matrix for design and AR order `order`
+def ar_bias_corrector(design, calc_beta, order=1):
+    """ Return bias correcting matrix for design and AR order `order`
+
+    There is a slight bias in the rho estimates on residuals due to the
+    correlations induced in the residuals by fitting a linear model.  See [1]
+
+    This routine implements the bias correction described in appendix A.1 of
+    [1]
 
     Parameters
     ----------
@@ -521,6 +527,12 @@ def ar_bias_correcter(design, calc_beta, order=1):
     invM : array
         Matrix to bias correct estimated covariance matrix in calculating the AR
         coefficients
+
+    References
+    ----------
+    [1] K.J. Worsley, C.H. Liao, J. Aston, V. Petre, G.H. Duncan, F. Morales,
+    A.C. Evans (2002) A General Statistical Analysis for fMRI Data.  Neuroimage
+    15:1:15
     """
     R = np.eye(design.shape[0]) - np.dot(design, calc_beta)
     M = np.zeros((order+1,)*2)
@@ -535,6 +547,12 @@ def ar_bias_correcter(design, calc_beta, order=1):
 
 def ar_bias_correct(results, order, invM=None):
     """ Apply bias correction in calculating AR(p) coefficients from `results`
+
+    There is a slight bias in the rho estimates on residuals due to the
+    correlations induced in the residuals by fitting a linear model.  See [1]
+
+    This routine implements the bias correction described in appendix A.1 of
+    [1]
 
     Parameters
     ----------
@@ -554,7 +572,7 @@ def ar_bias_correct(results, order, invM=None):
     """
     if invM is None:
         model = results.model
-        invM = ar_bias_correcter(model.design, model.calc_beta, order)
+        invM = ar_bias_corrector(model.design, model.calc_beta, order)
     # Allows results residuals to have shapes other than 2D
     resid = results.resid.reshape((results.resid.shape[0], -1))
     sum_sq = results.scale.reshape(resid.shape[1:]) * results.df_resid

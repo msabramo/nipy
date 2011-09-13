@@ -403,6 +403,8 @@ class Realign4dAlgorithm(object):
                                 fhess=fhess,
                                 **self.optimizer_kwargs)
         pc = fmin(f, self.transforms[t].param, *args, **kwargs)
+        print('*****')
+        print(pc)
         self.set_transform(t, pc)
 
     def estimate_motion(self):

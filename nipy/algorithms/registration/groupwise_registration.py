@@ -403,8 +403,6 @@ class Realign4dAlgorithm(object):
                                 fhess=fhess,
                                 **self.optimizer_kwargs)
         pc = fmin(f, self.transforms[t].param, *args, **kwargs)
-        print('*****')
-        print(pc)
         self.set_transform(t, pc)
 
     def estimate_motion(self):
@@ -572,8 +570,6 @@ def realign4d(runs,
     """
 
     # Single-session case
-    if not hasattr(runs, '__iter__'):
-        runs = [runs]
     nruns = len(runs)
     if nruns == 1:
         align_runs = False
@@ -641,7 +637,7 @@ class Realign4d(object):
     def _generic_init(self, images, affine_class,
                       slice_order, interleaved, tr, tr_slices,
                       start, time_interp):
-        if not hasattr(images, '__iter__'):
+        if hasattr(images, 'get_data'):
             images = [images]
         self._runs = []
         self.affine_class = affine_class

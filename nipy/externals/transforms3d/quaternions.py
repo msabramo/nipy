@@ -21,11 +21,12 @@ import numpy as np
 
 _MAX_FLOAT = np.maximum_sctype(np.float)
 _FLOAT_EPS = np.finfo(np.float).eps
+_INF = float('inf')
 
 
 def fillpositive(xyz, w2_thresh=None):
     ''' Compute unit quaternion from last 3 values
-    
+
     Parameters
     ----------
     xyz : iterable
@@ -51,7 +52,7 @@ def fillpositive(xyz, w2_thresh=None):
     w = 0 corresponds to a 180 degree rotation
 
     The unit quaternion specifies that np.dot(wxyz, wxyz) == 1.
-    
+
     If w is positive (assumed here), w is given by:
 
     w = np.sqrt(1.0-(x*x+y*y+z*z))
@@ -400,6 +401,10 @@ def axangle2rmat(vector, theta):
        vector specifying axis for rotation.
     theta : scalar
        angle of rotation
+    identity_thresh : None or scalar, optional
+       threshold below which the squared norm of `vector` is deemed to be 0,
+       leading to the identity rotation.  None (the default) leads to a
+       threshold estimated based on the precision of the input.
 
     Returns
     -------
@@ -433,17 +438,17 @@ def quat2axangle(quat, identity_thresh=None):
     quat : 4 element sequence
        w, x, y, z forming quaternion
     identity_thresh : None or scalar, optional
-       threshold below which the norm of the vector part of the
-       quaternion (x, y, z) is deemed to be 0, leading to the identity
-       rotation.  None (the default) leads to a threshold estimated
-       based on the precision of the input.
-       
+       threshold below which the squared norm of the vector part of the
+       quaternion (x, y, z) is deemed to be 0, leading to the identity rotation.
+       None (the default) leads to a threshold estimated based on the precision
+       of the input.
+
     Returns
     -------
-    theta : scalar
-       angle of rotation
     vector : array shape (3,)
        axis around which rotation occurs
+    theta : scalar
+       angle of rotation
 
     Examples
     --------
@@ -455,25 +460,27 @@ def quat2axangle(quat, identity_thresh=None):
 
     If this is an identity rotation, we return a zero angle and an
     arbitrary vector
-    
+
     >>> quat2axangle([1, 0, 0, 0])
     (array([ 1.,  0.,  0.]), 0.0)
 
     Notes
     -----
-    A quaternion for which x, y, z are all equal to 0, is an identity
-    rotation.  In this case we return a 0 angle and an  arbitrary 
-    vector, here [1, 0, 0]
+    A quaternion for which x, y, z are all equal to 0, is an identity rotation.
+    In this case we return a 0 angle and an arbitrary vector, here [1, 0, 0]
     '''
     w, x, y, z = quat
     vec = np.asarray([x, y, z])
     if identity_thresh is None:
         try:
-            identity_thresh = np.finfo(vec.dtype).eps * 3
+            identity_thresh = np.finfo(vec.dtype).eps
         except ValueError: # integer type
-            identity_thresh = _FLOAT_EPS * 3
-    n = min(math.sqrt(x*x + y*y + z*z), _MAX_FLOAT)
-    if n < identity_thresh: 
+            identity_thresh = _FLOAT_EPS
+    len2 = x*x + y*y + z*z
+    if len2 < identity_thresh:
         # if vec is nearly 0,0,0, this is an identity rotation
         return np.array([1.0, 0, 0]), 0.0
-    return  vec / n, 2 * math.acos(max(min(w,1),-1))
+    if len2 == _INF:
+        raise ValueError('Inf in quaternion vector')
+    theta = 2 * math.acos(max(min(w,1),-1))
+    return  vec / math.sqrt(len2), theta

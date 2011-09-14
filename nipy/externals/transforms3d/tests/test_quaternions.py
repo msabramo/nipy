@@ -12,8 +12,7 @@ except ImportError:
         t.slow = True
         return t
 
-from nose.tools import assert_raises, assert_true, assert_false, \
-    assert_equal
+from nose.tools import (assert_raises, assert_true, assert_equal)
 
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
@@ -80,7 +79,7 @@ def test_quat2mat():
     yield assert_array_almost_equal, M, np.diag([1, -1, -1])
     M = tq.quat2mat([0, 0, 0, 0])
     yield assert_array_almost_equal, M, np.eye(3)
-    
+
 
 def test_inverse():
     # Takes sequence
@@ -190,7 +189,10 @@ def test_axis_angle():
         yield assert_array_almost_equal, aa_mat, aa_mat2
         aa_mat22 = sympy_aa2mat2(vec, theta)
         yield assert_array_almost_equal, aa_mat, aa_mat22
+    # Test edge cases
+    feps = np.finfo(np.float).eps
+    vec, theta = tq.quat2axangle([1, np.sqrt(feps)/2, 0, 0])
+    yield assert_array_equal, vec, [1, 0, 0]
+    yield assert_equal, theta, 0
+    yield assert_raises, ValueError, tq.quat2axangle, [1, np.inf, 0, 0]
 
-
-
-            

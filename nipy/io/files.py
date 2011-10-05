@@ -65,7 +65,7 @@ def load(filename):
     return Image(img._data, cmap, metadata={'header': hdr})
 
 
-def save(img, filename, dtype=None):
+def save(img, filename, io_dtype=None):
     """Write the image to a file.
 
     Parameters
@@ -73,6 +73,11 @@ def save(img, filename, dtype=None):
     img : An `Image` object
     filename : string
         Should be a valid filename.
+    io_dtype : None or dtype specifier, optional
+        dtype to save data to disk.  Set into header before save as hint for
+        output format to chose dtype to save to. Not every format supports every
+        dtype, so some values of this parameter will raise errors.  The default
+        (`io_dtype` == None) is to use the dtype of the image data.
 
     Returns
     -------
@@ -149,6 +154,9 @@ def save(img, filename, dtype=None):
                     affine=aff,
                     header=original_hdr)
     hdr = out_img.get_header()
+    # Set io dtype if possible
+    if not io_dtype is None:
+        hdr.set_data_dtype(io_dtype)
     # work out phase, freqency, slice from coordmap names
     axisnames = affine_3dorless_transform.function_domain.coord_names
 
@@ -159,7 +167,7 @@ def save(img, filename, dtype=None):
         pass
     # Set zooms
     hdr.set_zooms(zooms)
-    # save to disk
+    # Save to disk
     out_img.to_filename(filename)
     return img
 
@@ -236,4 +244,3 @@ def as_image(image_input):
     if isinstance(image_input, basestring):
         return load(image_input)
     raise TypeError('Expecting an image-like object or filename string')
-    

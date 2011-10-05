@@ -58,7 +58,6 @@ def test_nondiag():
 
 
 def uint8_to_dtype(dtype, name):
-    dtype = dtype
     shape = (2,3,4)
     dmax = np.iinfo(np.uint8).max
     data = np.random.randint(0, dmax, size=shape)
@@ -66,35 +65,44 @@ def uint8_to_dtype(dtype, name):
     data[1,0,0] = dmax
     data = data.astype(np.uint8) # randint returns np.int32
     img = Image(data, AfT('kji', 'zxy', np.eye(4)))
-    newimg = save_image(img, name, dtype=dtype)
+    # The io_dtype won't be visible until the image is loaded
+    newimg = save_image(img, name, io_dtype=dtype)
     return newimg.get_data(), data
 
 
 def float32_to_dtype(dtype, name):
-    # Utility function for the scaling_float32 function
-    dtype = dtype
     shape = (2,3,4)
-    # set some value value for scaling our data
+    # set some value for scaling our data
     scale = np.iinfo(np.uint16).max * 2.0
-    data = np.random.normal(size=(2,3,4), scale=scale)
+    data = np.random.normal(size=shape, scale=scale)
     data[0,0,0] = np.finfo(np.float32).max
     data[1,0,0] = np.finfo(np.float32).min
     # random.normal will return data as native machine type
     data = data.astype(np.float32)
     img = Image(data, AfT('kji', 'zyx', np.eye(4)))
-    newimg = save_image(img, name, dtype=dtype)
+    # The io_dtype won't be visible until the image is loaded
+    newimg = save_image(img, name, io_dtype=dtype)
     return newimg.get_data(), data
 
 
-def test_scaling():
+def test_scaling_io_dtype():
+    # Does io_dtype get set?
+    # Is scaling correctly applied?
     with InTemporaryDirectory():
         for dtype_type in (np.uint8, np.uint16,
                            np.int16, np.int32,
                            np.float32):
-            newdata, data = uint8_to_dtype(dtype_type, 'img.nii')
-            assert_almost_equal(newdata, data)
-            newdata, data = float32_to_dtype(dtype_type, 'img.nii')
-            assert_almost_equal(newdata, data)
+            data, _ = uint8_to_dtype(dtype_type, 'img.nii')
+            img = load_image('img.nii')
+            assert_almost_equal(data, img.get_data())
+            hdr = img.metadata['header']
+            assert_equal(hdr.get_data_dtype().type, dtype_type)
+            float32_to_dtype(dtype_type, 'img.nii')
+            img = load_image('img.nii')
+            hdr = img.metadata['header']
+            assert_equal(hdr.get_data_dtype().type, dtype_type)
+            assert_almost_equal(data, img.get_data())
+            del img
 
 
 def test_header_roundtrip():

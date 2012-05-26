@@ -11,7 +11,8 @@ from ..coordinate_map import AffineTransform, CoordinateMap
 from ..spaces import (vox2mni, vox2scanner, vox2talairach, vox2unknown,
                       vox2aligned, xyz_affine, xyz_order, SpaceTypeError,
                       AxesError, AffineError, XYZSpace, known_space,
-                      known_spaces, is_xyz_space)
+                      known_spaces, is_xyz_space, SpaceError,
+                      get_world_cs, mni_csm, mni_space)
 
 from numpy.testing import (assert_array_almost_equal,
                            assert_array_equal)
@@ -143,6 +144,22 @@ def test_default_makers():
             ran_cs = CS(r_names[:i], r_name)
             aff = np.diag(range(i) + [1])
             assert_equal(csm(aff), AffineTransform(dom_cs, ran_cs, aff))
+
+
+def test_get_world_cs():
+    # Utility to get world from a variety of inputs
+    assert_equal(get_world_cs('mni'), mni_csm(3))
+    mnit = mni_space.to_coordsys_maker('t')(4)
+    assert_equal(get_world_cs(mni_space, 4), mnit)
+    assert_equal(get_world_cs(mni_csm, 4), mni_csm(4))
+    assert_equal(get_world_cs(CS('xyz')), CS('xyz'))
+    hija = XYZSpace('hija')
+    maker = hija.to_coordsys_maker('qrs')
+    assert_equal(get_world_cs('hija', ndim = 5, extras='qrs', spaces=[hija]),
+                 maker(5))
+    assert_raises(SpaceError, get_world_cs, 'hijo')
+    assert_raises(SpaceError, get_world_cs, 'hijo', spaces=[hija])
+    assert_raises(ValueError, get_world_cs, 0)
 
 
 def test_xyz_affine():

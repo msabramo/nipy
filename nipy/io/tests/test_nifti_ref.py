@@ -4,26 +4,25 @@ import warnings
 import numpy as np
 
 import nibabel as nib
-from nibabel.affines import append_diag
 
 from ...core.api import (CoordinateMap, AffineTransform, CoordinateSystem,
                            lps_output_coordnames, ras_output_coordnames)
 from ...core.reference.spaces import (unknown_csm, scanner_csm, aligned_csm,
                                       talairach_csm)
 
-from ..nifti_ref import (ni_affine_pixdim_from_affine,
+from ..files import load, save
+from ..nifti_ref import (nipy2hdr_data, hdr_data2nipy,
                          get_input_cs, get_output_cs)
 
 from nose.tools import assert_equal, assert_true, assert_false, assert_raises
 from numpy.testing import assert_almost_equal
 
+from ...testing import anatfile, funcfile
+
 
 shape = range(1,8)
 step = np.arange(1,8)
 
-output_axes = lps_output_coordnames + tuple('tuvw')
-input_axes = 'ijktuvw'
-lps = lps_output_coordnames # shorthand
 
 def setup():
     # Suppress warnings during tests
@@ -35,65 +34,16 @@ def teardown():
     warnings.resetwarnings()
 
 
-def test_ni_pix_from_aff():
-    # Test ni_pixdim_from_affine
-    # A 3D affine
-    aff = np.random.standard_normal((4,4))
-    aff[-1] = [0,0,0,1]
-    function_domain = CoordinateSystem('ijk', 'input')
-    function_range = CoordinateSystem(lps, 'output')
-    threed = AffineTransform(function_domain, function_range, aff)
-    # Corresponding 4D
-    aff4 = append_diag(aff, [3.5])
-    fourd = AffineTransform('ijkl', lps_output_coordnames + ('t',), aff4)
-    yield assert_almost_equal, aff, threed.affine
-    yield assert_almost_equal, fourd.affine[3:,3:], np.diag([3.5,1])
-
-    # get the pixdim back out
-    A, p = ni_affine_pixdim_from_affine(fourd)
-    yield assert_almost_equal, aff, A.affine
-    yield assert_almost_equal, p, 3.5
-
-    # try strict
-    A, p = ni_affine_pixdim_from_affine(fourd, strict=True)
-
-    # try using RAS
-    cmap = fourd.renamed_range(dict(zip(lps, ras_output_coordnames)))
-    A, p = ni_affine_pixdim_from_affine(cmap, strict=True)
-
-    # will have been flipped to LPS
-    yield assert_almost_equal, A.affine, np.dot(np.diag([-1,-1,1,1]),aff)
-    yield assert_equal, A.function_range.coord_names, lps
-
-    # use coordinates that aren't OK and strict raises an exception
-    cmap = fourd.renamed_range(dict(zip(lps, 'xyz')))
-    yield assert_raises, ValueError, ni_affine_pixdim_from_affine, cmap, \
-        True
-
-    # use coordinates that aren't OK and not strict just guesses LPS
-    cmap4 = fourd.renamed_range(dict(zip(lps, 'xyz')))
-    A, p =  ni_affine_pixdim_from_affine(cmap4, False)
-    yield assert_almost_equal, A.affine, aff
-    yield assert_equal, A.function_range.coord_names, lps
-    yield assert_almost_equal, p, 3.5
-
-    # non-square affine fails
-    Z = np.random.standard_normal((5,4))
-    Z[-1] = [0,0,0,1]
-    affine = AffineTransform.from_params('ijk', 'xyzt', Z)
-    yield assert_raises, ValueError, ni_affine_pixdim_from_affine, affine
-
-    # CoordinateMap fails
-    ijk = CoordinateSystem('ijk')
-    xyz = CoordinateSystem('xzy')
-    cmap = CoordinateMap(ijk, xyz, np.exp)
-    yield assert_raises, ValueError, ni_affine_pixdim_from_affine, cmap, True
-    # non-diagonal above 3rd dimension, with strict True raises an exception
-    cmap5 = cmap4.renamed_range(dict(zip('xyz', lps)))
-    cmap5.affine[3,-1] = 4.
-    yield assert_raises, ValueError, ni_affine_pixdim_from_affine, cmap5, True
-    B, p = ni_affine_pixdim_from_affine(cmap5)
-    yield assert_equal, p, 3.5
+def test_nipy2hdr_data():
+    # Go from nipy image to header and data for nifti
+    # Header is preserved, copied as necesary
+    fimg = load(funcfile)
+    data = fimg.get_data()
+    hdr = fimg.metadata['header']
+    new_hdr, new_data = nipy2hdr_data(fimg)
+    assert_false(hdr is new_hdr)
+    assert_equal(hdr['slice_duration'], new_hdr['slice_duration'])
+    assert_true(data is new_data)
 
 
 def test_input_cs():

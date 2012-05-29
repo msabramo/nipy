@@ -20,8 +20,7 @@ from nibabel.affines import append_diag
 
 from ..core.image.image import Image, is_image
 from ..core.reference.coordinate_map import AffineTransform
-from .nifti_ref import (ni_affine_pixdim_from_affine, get_input_cs,
-                        get_output_cs)
+from .nifti_ref import (nipy2hdr_data, get_input_cs, get_output_cs)
 
 
 def load(filename):
@@ -125,18 +124,10 @@ def save(img, filename, dtype=None):
 
     * Nifti single file : ['.nii', '.nii.gz']
     * Nifti file pair : ['.hdr', '.hdr.gz']
-    * Analyze file pair : ['.img', 'img.gz']
+    * SPM Analyze : ['.img', '.img.gz']
     """
-    # Get header from image
-    original_hdr = img.metadata.get('header')
-    # Make NIFTI compatible affine_transform
-    affine_3dorless_transform, pixdim = ni_affine_pixdim_from_affine(img.coordmap)
-    # what are we going to do with pixdim?
-    # LPIImage will all have pixdim[3:] == 1...
-    aff = affine_3dorless_transform.affine
-    rzs = img.coordmap.affine[:-1,:-1]
-    zooms = np.sqrt(np.sum(rzs * rzs, axis=0))
-
+    # Try and get nifti parameters
+    hdr, data = nipy2hdr_data(img)
     ftype = _type_from_filename(filename)
     if ftype.startswith('nifti1'):
         klass = nib.Nifti1Image
@@ -146,19 +137,8 @@ def save(img, filename, dtype=None):
         raise ValueError('Cannot save file type "%s"' % ftype)
     # make new image
     out_img = klass(data=img.get_data(),
-                    affine=aff,
-                    header=original_hdr)
-    hdr = out_img.get_header()
-    # work out phase, freqency, slice from coordmap names
-    axisnames = affine_3dorless_transform.function_domain.coord_names
-
-    # let the hdr do what it wants from the axisnames
-    try:
-        hdr.set_dim_info_from_names(axisnames)
-    except AttributeError:
-        pass
-    # Set zooms
-    hdr.set_zooms(zooms)
+                    affine=hdr.get_best_affine(),
+                    header=hdr)
     # save to disk
     out_img.to_filename(filename)
     return img
@@ -236,4 +216,3 @@ def as_image(image_input):
     if isinstance(image_input, basestring):
         return load(image_input)
     raise TypeError('Expecting an image-like object or filename string')
-    

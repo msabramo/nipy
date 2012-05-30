@@ -43,9 +43,9 @@ instead, and set the NIFTI "intent" fields to state the meaning. If the
 ``intent`` field is set correctly then it should be possible to set meaningful
 input coordinate axis names for dimensions > (0, 1, 2).
 
-There's wrinkle to the 4th axis is time story; the ``xyxt_units`` field in the
-NIFTI header can specify the 4th dimension units as Hz (frequency),
-PPM (concentration) or Radians / second.
+There's a wrinkle to the 4th axis is time story; the ``xyxt_units`` field in the
+NIFTI header can specify the 4th dimension units as Hz (frequency), PPM
+(concentration) or Radians / second.
 
 NIFTI also has a 'dim_info' header attribute that optionally specifies that 0 or
 more of the first three voxel axes are 'frequency', 'phase' or 'slice'.  These
@@ -78,16 +78,44 @@ NIFTI stores the relationship between the first 3 (spatial) voxel axes and the
 RAS+ coordinates in an *XYZ affine*.  This is a homogenous coordinate affine,
 hence 4 by 4 for 3 (spatial) dimensions.
 
-NIFTI also stored "pixel dimensions" in a ``pixdim`` field. This can give you
+NIFTI also stores "pixel dimensions" in a ``pixdim`` field. This can give you
 scaling for individual axes.  We ignore the values of ``pixdim`` for the first 3
 axes if we have a full ("sform") affine stored in the header, otherwise they
-form part of the affine above.  Later values provide voxel to output calings for
-later axes.  The units for the 4th dimension can come from ``xyzt_units`` as
+form part of the affine above.  ``pixdim``[3:] provide voxel to output calings
+for later axes.  The units for the 4th dimension can come from ``xyzt_units`` as
 above.
 
 We take the convention that the output coordinate names are ('x=L->R', 'y=P->A',
-'z=I->S','t','u','v','w').  The first 3 axes are also named after the output
-space ('scanner-x=L->R', 'mni-x=L-R' etc).
+'z=I->S','t','u','v','w') unless there is no time axis (see below) in which case
+we just omit 't'.  The first 3 axes are also named after the output space
+('scanner-x=L->R', 'mni-x=L-R' etc).
+
+The input axes are 'ijktuvw' unless there is no time axis (see below), in which case they are 'ijkuvw' (remember, nifti only allows 7 dimensions,
+and one is used up by the time length 1 axis).
+
+Time-like axes
+--------------
+
+A time-like axis is an axis that is any of time, Hz, PPM or radians / second.
+
+We recognize time in a NIPY coordinate map by an input or an output axis named
+'t' or 'time'.  If it's an output axis we work out the corresponding input axis.
+
+A Hz axis can be called 'hz' or 'frequency-hz'.
+
+A PPM axis can be called 'ppm' or 'concentration-ppm'.
+
+A radians / second axis can be called 'rads' or 'radians/s'.
+
+Does this nifti image have a time-like axis?
+--------------------------------------------
+
+We take there to be no time axis if there are only three nifti dimensions, or
+if:
+
+* the length of the fourth nifti dimension is 1 AND
+* There are more than four dimensions AND
+* The ``xyzt_units`` field does not indicate time or time-like units.
 
 What we do about all this
 =========================
@@ -110,16 +138,14 @@ If any of the first three input axes are named ('slice', 'freq', 'phase') set
 the ``dim_info`` field accordingly.
 
 Set the ``xyzt_units`` field to indicate millimeters and seconds, if there is a
-'t' axis, otherwise millimeters and 0 (unknown).
+'t' axis, otherwise millimeters and (Hz, PPM, rads) if there's are other time-like
+axes), otherwise millimeters and zero (unknown).
 
-We look to see if we have an *input* axis named 't'. If we do, roll that axis to
-be the 4th axis. Take the ``affine[3, -1]`` and put into the ``toffset`` field.
-If there's no 't' axis, but there are other non-spatial axes, make a length 1
-input axis to indicate this.
-
-If there is an *input* axis named any of frequency-hz', 'concentration-ppm' or
-'radians/s' and there is no 't' axis, move the axis to the 4th position and set
-``xyz_units``.
+We look to see if we have a time-like axis in the inputs or the outputs. If we
+do, roll that axis to be the 4th axis.  If this axis is actually time, take the
+``affine[3, -1]`` and put into the ``toffset`` field.  If there's no time-like
+axis, but there are other non-spatial axes, make a length 1 input axis to
+indicate this.
 
 Set ``pixdim`` for axes >= 3 using vector length of corresponding affine
 columns.
@@ -132,10 +158,11 @@ On loading a NIPY image from NIFTI
 Lacking any other information, we take the input coordinate names for
 axes 0:7 to be  ('i', 'j', 'k', 't', 'u', 'v', 'w').
 
-If axis 3 (4th) is length 1 and there are more than 4 dimensions to the input
-array, then squeeze the 4th dimension and omit 't' above. If ``xyzt_units``
-shows 4th axis to be Hz, PPM or radians / second, set the 4th axis name to
-'frequency-hz', 'concentration-ppm' or 'radians/s' respectively.
+If there is a time-like axis, name the input and corresponding output axis for
+the type of axis ('t', 'hz', 'ppm', 'rads').
+
+Otherwise remove the 't' axis from both input and output, and squeeze the length
+1 dimension from the nifti.
 
 If there's a 't' axis get ``toffset`` and put into affine at position [3, -1].
 

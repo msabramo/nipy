@@ -9,7 +9,7 @@ from nibabel.affines import apply_affine
 from ...fixes.nibabel import io_orientation
 
 from ...core.image.image_spaces import (neuro_image, xyz_affine,
-                                        as_xyz_affable)
+                                        with_xyz_first)
 from .optimizer import configure_optimizer, use_derivatives
 from .affine import Rigid
 from ._registration import (_cspline_transform,
@@ -661,7 +661,7 @@ class Realign4d(object):
         self._runs = []
         self.affine_class = affine_class
         for im in images:
-            xyz_img = as_xyz_affable(im)
+            xyz_img = with_xyz_first(im)
             self._runs.append(Image4d(xyz_img.get_data,
                                       xyz_affine(xyz_img),
                                       tr=tr, tr_slices=tr_slices,

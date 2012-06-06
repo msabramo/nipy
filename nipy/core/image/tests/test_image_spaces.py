@@ -7,7 +7,7 @@ import nibabel as nib
 from nibabel.affines import from_matvec
 
 from ..image import Image, rollaxis as img_rollaxis
-from ..image_spaces import (is_xyz_affable, as_xyz_affable, xyz_affine,
+from ..image_spaces import (is_xyz_affable, with_xyz_first, xyz_affine,
                             neuro_image)
 from ...reference.coordinate_system import CoordinateSystem as CS
 from ...reference.coordinate_map import AffineTransform
@@ -52,21 +52,21 @@ def test_image_xyz_affine():
     assert_array_equal(xyz_affine(img, my_valtor), aff)
 
 
-def test_image_as_xyz_affable():
+def test_image_with_xyz_first():
     # Test getting xyz affable version of the image
     arr = np.arange(24).reshape((1,2,3,4))
     aff = np.diag([2,3,4,5,1])
     img = Image(arr, vox2mni(aff))
-    img_r = as_xyz_affable(img)
+    img_r = with_xyz_first(img)
     assert_true(img is img_r)
     img_t0 = img_rollaxis(img, 't')
     assert_false(is_xyz_affable(img_t0))
-    img_t0_r = as_xyz_affable(img_t0)
+    img_t0_r = with_xyz_first(img_t0)
     assert_false(img_t0 is img_t0_r)
     assert_array_equal(img.get_data(), img_t0_r.get_data())
     assert_equal(img.coordmap, img_t0_r.coordmap)
     nimg = nib.Nifti1Image(arr, np.diag([2,3,4,1]))
-    nimg_r = as_xyz_affable(nimg)
+    nimg_r = with_xyz_first(nimg)
     assert_true(nimg is nimg_r)
     # It's sometimes impossible to make an xyz affable image
     # If the xyz coordinates depend on the time coordinate
@@ -76,7 +76,7 @@ def test_image_as_xyz_affable():
                     [0, 0, 0, 5, 23],
                     [0, 0, 0, 0, 1]])
     img = Image(arr, vox2mni(aff))
-    assert_raises(AffineError, as_xyz_affable, img)
+    assert_raises(AffineError, with_xyz_first, img)
     # If any dimensions not spatial, AxesError
     arr = np.arange(24).reshape((2,3,4))
     aff = np.diag([2,3,4,1])
@@ -84,14 +84,14 @@ def test_image_as_xyz_affable():
     r_cs = CS(('mni-x=L->R', 'mni-y=P->A', 'mni-q'), 'mni')
     cmap = AffineTransform(d_cs, r_cs, aff)
     img = Image(arr, cmap)
-    assert_raises(AxesError, as_xyz_affable, img)
+    assert_raises(AxesError, with_xyz_first, img)
     # Can pass in own validator
     my_valtor = dict(blind='x', leading='y', ditch='z')
     r_cs = CS(('blind', 'leading', 'ditch'), 'fall')
     cmap = AffineTransform(d_cs, r_cs, aff)
     img = Image(arr, cmap)
-    assert_raises(AxesError, as_xyz_affable, img)
-    assert_true(as_xyz_affable(img, my_valtor) is img)
+    assert_raises(AxesError, with_xyz_first, img)
+    assert_true(with_xyz_first(img, my_valtor) is img)
 
 
 def test_image_xyza_slices():
@@ -103,9 +103,9 @@ def test_image_xyza_slices():
     img0 = img[0] # slice in X
     # The result does not have an input axis corresponding to x, and should
     # raise an error
-    assert_raises(AxesError, as_xyz_affable, img0)
+    assert_raises(AxesError, with_xyz_first, img0)
     img0r = img0.reordered_reference([1,0,2,3]).reordered_axes([2,0,1])
-    assert_raises(AxesError, as_xyz_affable, img0r)
+    assert_raises(AxesError, with_xyz_first, img0r)
 
 
 def test_neuro_image():

@@ -12,7 +12,7 @@ variables in the ``nipy.core.reference.spaces`` module, and in this module.
 
 This keeps the specific neuroimaging spaces out of our Image object.
 
->>> from nipy.core.api import Image, vox2mni, img_rollaxis, xyz_affine, as_xyz_affable
+>>> from nipy.core.api import Image, vox2mni, img_rollaxis, xyz_affine, with_xyz_first
 
 Make a standard 4D xyzt image in MNI space.
 
@@ -50,7 +50,7 @@ AxesError: First 3 output axes must be X, Y, Z
 
 But we can fix this:
 
->>> img_t0_affable = as_xyz_affable(img_t0)
+>>> img_t0_affable = with_xyz_first(img_t0)
 >>> xyz_affine(img_t0_affable)
 array([[ 2.,  0.,  0.,  0.],
        [ 0.,  3.,  0.,  0.],
@@ -202,7 +202,7 @@ def is_xyz_affable(img, name2xyz=None):
     return True
 
 
-def as_xyz_affable(img, name2xyz=None):
+def with_xyz_first(img, name2xyz=None):
     """ Return version of `img` that has a valid xyz affine, or raise error
 
     Parameters

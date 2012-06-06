@@ -9,7 +9,7 @@ from sys import maxint
 import numpy as np
 
 from ...core.image.image_spaces import (neuro_image,
-                                        as_xyz_affable,
+                                        with_xyz_first,
                                         xyz_affine)
 
 from .optimizer import configure_optimizer
@@ -78,12 +78,12 @@ class HistogramRegistration(object):
          Trilinear, 'rand': Random interpolation.  See ``joint_histogram.c``
         """
         # Function assumes xyx_affine for inputs
-        from_img = as_xyz_affable(from_img)
-        to_img = as_xyz_affable(to_img)
+        from_img = with_xyz_first(from_img)
+        to_img = with_xyz_first(to_img)
         if not from_mask is None:
-            from_mask = as_xyz_affable(from_mask)
+            from_mask = with_xyz_first(from_mask)
         if not to_mask is None:
-            to_mask = as_xyz_affable(to_mask)
+            to_mask = with_xyz_first(to_mask)
 
         # Binning sizes
         if to_bins == None:

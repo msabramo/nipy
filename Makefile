@@ -84,5 +84,8 @@ tox-stale:
 	# installed)
 	tox -e python25,python26,python27,python32,np-1.2.1
 
+find-packages:
+	$(PYTHON) tools/find_packages.py
+
 .PHONY: orig-src pylint
 

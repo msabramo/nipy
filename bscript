@@ -3,9 +3,8 @@ import sys
 import tempfile
 import subprocess
 
-from bento.commands.hooks \
-    import \
-        post_configure, register_command, pre_configure
+from bento.commands import hooks
+
 from bento.commands.core \
     import \
         Command
@@ -50,13 +49,14 @@ Usage: bentomaker test [OPTIONS]"""
 
         hack_test()
 
-@pre_configure
+@hooks.pre_configure
 def pre_configure(ctx):
     cfg = ctx.yaku_configure_ctx
     cfg.load_tool("cython")
     cfg.load_tool("ctasks")
 
-@post_configure
+
+@hooks.post_configure
 def myconfigure(ctx):
     if ctx.help:
         return
@@ -92,5 +92,7 @@ def myconfigure(ctx):
     cfg.env["PYEXT_LIBS"].insert(0, "lapack")
     cfg.env["PYEXT_LIBS"].insert(0, "cstat")
 
-def startup():
-    register_command("test", TestCommand)
+
+@hooks.startup
+def startup(context):
+    context.register_command("test", TestCommand())

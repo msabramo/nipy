@@ -51,15 +51,13 @@ Usage: bentomaker test [OPTIONS]"""
 
 @hooks.pre_configure
 def pre_configure(ctx):
-    cfg = ctx.yaku_configure_ctx
+    cfg = ctx.yaku_context
     cfg.load_tool("cython")
     cfg.load_tool("ctasks")
 
 
 @hooks.post_configure
 def myconfigure(ctx):
-    if ctx.help:
-        return
     from distutils.sysconfig \
         import \
             get_python_inc
@@ -67,7 +65,7 @@ def myconfigure(ctx):
         import \
             get_numpy_include_dirs
 
-    cfg = ctx.yaku_configure_ctx
+    cfg = ctx.yaku_context
 
     if sys.platform == "darwin":
         for arch in ["ppc", "ppc64", "i386", "x86_64"]:
@@ -81,7 +79,7 @@ def myconfigure(ctx):
     for p in get_numpy_include_dirs():
         cfg.env["PYEXT_CPPPATH"].insert(0, p)
         cfg.env["CPPPATH"].insert(0, p)
-    for p in ["wrapper", "fff", "randomkit"]:
+    for p in ["wrapper", "fff"]:
         cfg.env["PYEXT_CPPPATH"].append(os.path.join("libcstat", p))
     for p in ["segmentation", "registration"]:
         cfg.env["PYEXT_CPPPATH"].append(os.path.join("nipy", "algorithms", p))

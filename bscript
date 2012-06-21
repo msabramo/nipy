@@ -83,8 +83,8 @@ def myconfigure(ctx):
         cfg.env["CPPPATH"].insert(0, p)
     for p in ["wrapper", "fff", "randomkit"]:
         cfg.env["PYEXT_CPPPATH"].append(os.path.join("libcstat", p))
-    for p in ["segmentation", "image", "registration"]:
-        cfg.env["PYEXT_CPPPATH"].append(os.path.join("nipy", "neurospin", p))
+    for p in ["segmentation", "registration"]:
+        cfg.env["PYEXT_CPPPATH"].append(os.path.join("nipy", "algorithms", p))
     cfg.env["CYTHON_CPPPATH"].append(os.path.join("libcstat", "wrapper"))
 
     cfg.env["PYEXT_LIBDIR"].insert(0, cfg.env["BLDDIR"])

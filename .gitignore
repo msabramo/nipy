@@ -55,6 +55,7 @@ _build
 dist/
 *.egg-info
 .shelf/
+.tox
 
 # Logs and databases #
 ######################
